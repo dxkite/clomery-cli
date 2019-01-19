@@ -2,9 +2,10 @@
 title: Hello World
 date: 2019-01-12 19:43:59
 categories:
-    - 默认分类
+    - CCG
 tags:
     - 测试文章
+    - Clomery
 ---
 
 # Hello World
