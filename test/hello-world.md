@@ -28,5 +28,5 @@ var isMatchKeyWords = function (match) {
 
 测试图片 ![](0.png)
 
-- 附件1 [attachment.txt](attachment.txt)
+- 附件1 [附件资源attachment.txt](./attachment.txt)
 - 附件2 [0.png](0.png)

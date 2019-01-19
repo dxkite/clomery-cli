@@ -1,6 +1,7 @@
 <?php
 namespace clomery\command;
 
+use CURLFile;
 use clomery\markdown\LinkParse;
 use clomery\remote\RemoteClass;
 use suda\core\storage\FileStorage;
@@ -45,10 +46,10 @@ class PostArticleCommand extends Command
         ]);
         $io->text('upload to <info>'.$url.'</>');
         if (!$s->exist($outputPath.'/posts/'.$name.'.json') || $force) {
-           $this->getApplication()
+            $this->getApplication()
            ->find('post:generate')
            ->run(new ArrayInput([ 'path' => $path,  '--database' => $outputPath, '--force'=> $force]), $output);
-           $this->getApplication()
+            $this->getApplication()
            ->find('post:analysis')
            ->run(new ArrayInput([ 'name' => $name,  '--database' => $outputPath,]), $output);
         }
@@ -56,18 +57,74 @@ class PostArticleCommand extends Command
         // 读取文件信息
         $articlePath = $outputPath.'/posts/'.$name.'.json';
         $articleData = \json_decode($s->get($articlePath), true);
-      
+        $content = $articleData['content'];
         $category = $articleData['meta']['categories'][count($articleData['meta']['categories'])-1] ?? '';
-        $return = $remoteClass->_call('save',[
+        $articleId = $remoteClass->_call('save', [
             'title' => $articleData['meta']['title'] ?? 'untitiled',
             'slug' => $name,
             'excerpt' => $articleData['excerpt'] ?? '',
-            'content' => $articleData['content'] ?? '',
+            'content' => $content,
             'category' => $category ,
             'create' => \date_create_from_format('Y-m-d H:i:s', $articleData['meta']['date'])->getTimestamp(),
             'tags' => $articleData['meta']['tags'],
             'status' => 2,
         ]);
-        $io->text('uploaded article id: <info>'.$return.'</>');
+        $io->text('uploaded article id: <info>'.$articleId.'</>');
+    
+        $replace = [];
+        $imageJson =  $outputPath.'/posts/'.$name.'/image.json';
+        $attachmentJson =  $outputPath.'/posts/'.$name.'/attachment.json';
+        $nameJson =  $outputPath.'/posts/'.$name.'/name.json';
+        $names = [];
+        if ($s->exist($nameJson)) {
+            $names = \json_decode($s->get($nameJson), true);
+        }
+
+        if ($s->exist($imageJson)) {
+            $io->text('prepare images');
+            $articleImageData = \json_decode($s->get($imageJson), true);
+            foreach ($articleImageData as $path) {
+                $filePath = $outputPath.'/posts/'.$name.'/resource/' .$path;
+                $uploadedInfo = $remoteClass->_call('saveImage', [
+                    'article' => $articleId,
+                    'name' => $names[$path] ?? $path,
+                    'image' => new CURLFile($filePath),
+                ]);
+                if (!empty($uploadedInfo)) {
+                    $replace[$path] = $uploadedInfo;
+                }
+            }
+        }
+        
+        if ($s->exist($attachmentJson)) {
+            $io->text('prepare attachment');
+            $articleAttachmentData = \json_decode($s->get($attachmentJson), true);
+            foreach ($articleAttachmentData as $path) {
+                $filePath = $outputPath.'/posts/'.$name.'/resource/' .$path;
+                $uploadedInfo = $remoteClass->_call('saveAttachment', [
+                'article' => $articleId,
+                'name' => $names[$path] ?? $path,
+                'attachment' => new CURLFile($filePath),
+            ]);
+                if (!empty($uploadedInfo)) {
+                    $replace[$path] = $uploadedInfo;
+                }
+            }
+        }
+        foreach ($replace as $path => $uploadedInfo) {
+            $content = \str_replace(']('.$path.')', ']('.$uploadedInfo['url'].')', $content);
+        }
+
+        $articleId = $remoteClass->_call('save', [
+            'title' => $articleData['meta']['title'] ?? 'untitiled',
+            'slug' => $name,
+            'excerpt' => $articleData['excerpt'] ?? '',
+            'content' => $content,
+            'category' => $category ,
+            'create' => \date_create_from_format('Y-m-d H:i:s', $articleData['meta']['date'])->getTimestamp(),
+            'tags' => $articleData['meta']['tags'],
+            'status' => 2,
+        ]);
+        $io->text('uploaded article resource : <info>'.$articleId.'</>');
     }
 }

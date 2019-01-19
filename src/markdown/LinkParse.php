@@ -18,6 +18,12 @@ class LinkParse extends Parsedown
      */
     protected $links = [];
    
+    /**
+     * 名称
+     *
+     * @var array
+     */
+    protected $name = [];
     
     protected function inlineImage($excerpt)
     {
@@ -25,15 +31,18 @@ class LinkParse extends Parsedown
         $link = $image['element']['attributes']['src'];
         if (strpos($link, 'http') !== 0) {
             $this->images[]=$link;
+            $this->name[$link] = $link['element']['attributes']['alt'] ?? null; 
         }
         return $image;
     }
+
     protected function inlineLink($excerpt)
     {
         $link = parent::inlineLink($excerpt);
         $href = $link['element']['attributes']['href'];
         if (strpos($href, 'http') !== 0) {
             $this->links[]=$href;
+            $this->name[$href] = $link['element']['text'] ?? null; 
         }
         return $link;
     }
@@ -70,5 +79,15 @@ class LinkParse extends Parsedown
         });
         sort($att);
         return $att;
+    }
+
+    /**
+     * Get 名称
+     *
+     * @return  array
+     */ 
+    public function getName()
+    {
+        return $this->name;
     }
 }

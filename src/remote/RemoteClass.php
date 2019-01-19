@@ -1,6 +1,7 @@
 <?php
 namespace clomery\remote;
 
+use CURLFile;
 use Exception;
 use clomery\remote\RemoteException;
 
@@ -89,9 +90,8 @@ class RemoteClass
         // curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, $verifyHost);
         // curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verifyPeer);
         foreach ($params as $name => $param) {
-            if (is_string($param) && strpos($param, 'file:///') === 0) {
+            if ($param instanceof \CURLFile) {
                 $postFile =true;
-                $params[$name] = '@'.substr($param, strlen('file:///'));
             }
         }
         if ($postFile) {
@@ -107,6 +107,7 @@ class RemoteClass
         $data = curl_exec($curl);
         $contentType=curl_getinfo($curl, CURLINFO_CONTENT_TYPE);
         $code =curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        // \var_dump(curl_getinfo($curl));
         // $headerSend =curl_getinfo($curl, CURLINFO_HEADER_OUT);
         // print $headerSend;
         if ($data) {
@@ -130,6 +131,7 @@ class RemoteClass
                     $error=json_decode($data, true);
                     throw (new RemoteException($error['error']['message'], $error['error']['code']))->setName($error['error']['name']);
                 }
+                throw new RemoteException('Server 500 Error');
             }
         } else {
             if ($errno = curl_errno($curl)) {

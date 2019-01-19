@@ -52,9 +52,11 @@ class PostAnalysisCommand extends Command
 
         $imageJson =  $outputPath.'/posts/'.$name.'/image.json';
         $attachmentJson =  $outputPath.'/posts/'.$name.'/attachment.json';
+        $nameJson =  $outputPath.'/posts/'.$name.'/name.json';
 
         $s->put($imageJson, \json_encode($linkParse->getImages(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         $s->put($attachmentJson, \json_encode($linkParse->getAttachments(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        $s->put($nameJson, \json_encode($linkParse->getName(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         
         foreach ($linkParse->getImages() as $imagePath) {
             $s->copy($rootPath.'/'.$imagePath, $outputPath.'/posts/'.$name.'/resource/' .$imagePath);
