@@ -1,0 +1,26 @@
+{
+    "name": "dxkite/clomery-uploader",
+    "description": "a console tool for clomery-uploader module",
+    "type": "console",
+    "require": {
+        "symfony/console": "^4.2",
+        "dxkite/suda": "dev-dev",
+        "mustangostang/spyc": "^0.6.2",
+        "erusev/parsedown": "^1.7"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "DXkite",
+            "email": "DXkite@163.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "clomery\\": "src/"
+        }
+    },
+    "bin": [
+        "clomery-cli.php"
+    ]
+}
