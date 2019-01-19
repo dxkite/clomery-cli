@@ -98,8 +98,15 @@ class PostGenerateCommand extends Command
     protected function readArticle(string $inputPath, SymfonyStyle $io, FileStorage $storage)
     {
         $article = $storage->get($inputPath);
-        if (preg_match('/^\-\-\-\r?\n(.+)\-\-\-\r?\n(?:(.+)\<\!\-\-\s+more\s+\-\-\>)?(.+)$/ims', $article, $match)) {
-            list($raw, $meta, $excerpt, $content) = $match;
+        if (strpos($article, '---', 1) > 0) {
+            list($date, $meta, $article)  = \explode('---', $article, 3);
+            $article = \preg_split('/\<\!\-\-\s*more\s*\-\-\>/', $article, 2);
+            if (count($article) === 2) {
+                list($excerpt, $content) = $article;
+            } else {
+                $excerpt ='';
+                $content = $article[0];
+            }
             $meta = Spyc::YAMLLoadString($meta);
             $excerpt = trim($excerpt);
             $content = trim($content);

@@ -40,7 +40,9 @@ class PostAnalysisCommand extends Command
             return false;
         }
         $rootPath =  dirname($data[$name.'.md'][3]);
-        $linkParse = LinkParse::instance();
+        
+        $linkParse = new LinkParse;
+
         $linkParse ->text($dataPost['content']);
         
         $io->section('article images');

@@ -8,6 +8,7 @@ use suda\core\storage\FileStorage;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -44,21 +45,36 @@ class PostArticleCommand extends Command
         $remoteClass = new RemoteClass($url, $outputPath.'/session', [
             'Clomery-Token' => $token,
         ]);
+
         $io->text('upload to <info>'.$url.'</>');
-        if (!$s->exist($outputPath.'/posts/'.$name.'.json') || $force) {
+        $io->newLine(2);
+
+        $hash = \md5_file($path);
+
+        if ($this->checkMd5($outputPath.'/posts/'.$name.'/version', $hash) === false || $force) {
             $this->getApplication()
            ->find('post:generate')
            ->run(new ArrayInput([ 'path' => $path,  '--database' => $outputPath, '--force'=> $force]), $output);
             $this->getApplication()
            ->find('post:analysis')
            ->run(new ArrayInput([ 'name' => $name,  '--database' => $outputPath,]), $output);
+        } else {
+            $io->text('uploaded article hash : <info>'.$hash.'</>');
+            return 0;
         }
         
         // 读取文件信息
         $articlePath = $outputPath.'/posts/'.$name.'.json';
         $articleData = \json_decode($s->get($articlePath), true);
         $content = $articleData['content'];
-        $category = $articleData['meta']['categories'][count($articleData['meta']['categories'])-1] ?? '';
+        
+        if (isset($articleData['meta']['categories'])) {
+            $category = $articleData['meta']['categories'][count($articleData['meta']['categories'])-1] ?? '';
+        } else {
+            $category = null;
+        }
+        
+        
         $articleId = $remoteClass->_call('save', [
             'title' => $articleData['meta']['title'] ?? 'untitiled',
             'slug' => $name,
@@ -66,11 +82,13 @@ class PostArticleCommand extends Command
             'content' => $content,
             'category' => $category ,
             'create' => \date_create_from_format('Y-m-d H:i:s', $articleData['meta']['date'])->getTimestamp(),
-            'tags' => $articleData['meta']['tags'],
+            'tags' => $articleData['meta']['tags'] ?? null,
             'status' => 2,
         ]);
+
         $io->text('uploaded article id: <info>'.$articleId.'</>');
-    
+        $io->newLine(2);
+
         $replace = [];
         $imageJson =  $outputPath.'/posts/'.$name.'/image.json';
         $attachmentJson =  $outputPath.'/posts/'.$name.'/attachment.json';
@@ -81,35 +99,48 @@ class PostArticleCommand extends Command
         }
 
         if ($s->exist($imageJson)) {
-            $io->text('prepare images');
+            $io->text('upload images');
             $articleImageData = \json_decode($s->get($imageJson), true);
+            $progressBar = new ProgressBar($output, count($articleImageData));
             foreach ($articleImageData as $path) {
                 $filePath = $outputPath.'/posts/'.$name.'/resource/' .$path;
-                $uploadedInfo = $remoteClass->_call('saveImage', [
-                    'article' => $articleId,
-                    'name' => $names[$path] ?? $path,
-                    'image' => new CURLFile($filePath),
-                ]);
-                if (!empty($uploadedInfo)) {
-                    $replace[$path] = $uploadedInfo;
+                if ($s->exist($filePath)) {
+                    $uploadedInfo = $remoteClass->_call('saveImage', [
+                        'article' => $articleId,
+                        'name' => $names[$path] ?? $path,
+                        'image' => new CURLFile($filePath),
+                    ]);
+                    if (!empty($uploadedInfo)) {
+                        $replace[$path] = $uploadedInfo;
+                        $progressBar->advance();
+                    }
                 }
             }
+            $progressBar->finish();
+            $io->newLine(2);
         }
         
         if ($s->exist($attachmentJson)) {
-            $io->text('prepare attachment');
+            $io->text('upload attachment');
             $articleAttachmentData = \json_decode($s->get($attachmentJson), true);
+            $progressBar = new ProgressBar($output, count($articleAttachmentData));
             foreach ($articleAttachmentData as $path) {
-                $filePath = $outputPath.'/posts/'.$name.'/resource/' .$path;
-                $uploadedInfo = $remoteClass->_call('saveAttachment', [
-                'article' => $articleId,
-                'name' => $names[$path] ?? $path,
-                'attachment' => new CURLFile($filePath),
-            ]);
-                if (!empty($uploadedInfo)) {
-                    $replace[$path] = $uploadedInfo;
+                $filePath = $s->abspath($outputPath.'/posts/'.$name.'/resource/' .$path);
+                if ($s->exist($filePath)) {
+                    $uploadedInfo = $remoteClass->_call('saveAttachment', [
+                        'article' => $articleId,
+                        'name' => $names[$path] ?? $path,
+                        'attachment' => new CURLFile($filePath),
+                    ]);
+                    if (!empty($uploadedInfo)) {
+                        $replace[$path] = $uploadedInfo;
+                    }
                 }
+                
+                $progressBar->advance();
             }
+            $progressBar->finish();
+            $io->newLine(2);
         }
         foreach ($replace as $path => $uploadedInfo) {
             $content = \str_replace(']('.$path.')', ']('.$uploadedInfo['url'].')', $content);
@@ -122,9 +153,18 @@ class PostArticleCommand extends Command
             'content' => $content,
             'category' => $category ,
             'create' => \date_create_from_format('Y-m-d H:i:s', $articleData['meta']['date'])->getTimestamp(),
-            'tags' => $articleData['meta']['tags'],
+            'tags' => $articleData['meta']['tags']?? null,
             'status' => 2,
         ]);
-        $io->text('uploaded article resource : <info>'.$articleId.'</>');
+        $io->text('uploaded article resource : <info>'.$hash.'</>');
+        \file_put_contents($outputPath.'/posts/'.$name.'/version', $hash);
+    }
+
+    protected function checkMd5(string $path, string $md5)
+    {
+        if (\file_exists($path)) {
+            return \file_get_contents($path) == $md5;
+        }
+        return false;
     }
 }

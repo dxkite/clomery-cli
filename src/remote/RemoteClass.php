@@ -83,10 +83,15 @@ class RemoteClass
         curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($curl, CURLOPT_AUTOREFERER, 1);
         curl_setopt($curl, CURLOPT_POST, 1);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 3);
+        curl_setopt($curl, CURLOPT_SAFE_UPLOAD, 1);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 30);
         curl_setopt($curl, CURLOPT_COOKIEFILE, $cookieFile);
         curl_setopt($curl, CURLOPT_COOKIEJAR, $cookieFile);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 30);
+
+        // curl_setopt($curl, CURLOPT_PROXY, '127.0.0.1'); //代理服务器地址   
+        // curl_setopt($curl, CURLOPT_PROXYPORT, 8888 ); //代理服务器端口
+
         // curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, $verifyHost);
         // curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verifyPeer);
         foreach ($params as $name => $param) {
@@ -109,7 +114,7 @@ class RemoteClass
         $code =curl_getinfo($curl, CURLINFO_HTTP_CODE);
         // \var_dump(curl_getinfo($curl));
         // $headerSend =curl_getinfo($curl, CURLINFO_HEADER_OUT);
-        // print $headerSend;
+        // print $headerSend; 
         if ($data) {
             curl_close($curl);
             if ($code  == 200) {
