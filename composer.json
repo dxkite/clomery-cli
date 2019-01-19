@@ -1,6 +1,6 @@
 {
-    "name": "dxkite/clomery-uploader",
-    "description": "a console tool for clomery-uploader module",
+    "name": "dxkite/clomery-cli",
+    "description": "a console tool for clomery to upload article",
     "type": "console",
     "require": {
         "symfony/console": "^4.2",

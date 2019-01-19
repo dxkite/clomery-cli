@@ -43,7 +43,7 @@ class PostArticleCommand extends Command
         $remoteClass = new RemoteClass($url, $outputPath.'/session', [
             'Clomery-Token' => $token,
         ]);
-   
+        $io->text('upload to <info>'.$url.'</>');
         if (!$s->exist($outputPath.'/posts/'.$name.'.json') || $force) {
            $this->getApplication()
            ->find('post:generate')
@@ -64,10 +64,10 @@ class PostArticleCommand extends Command
             'excerpt' => $articleData['excerpt'] ?? '',
             'content' => $articleData['content'] ?? '',
             'category' => $category ,
-            'create' => \date_create_from_format('Y-m-d H:i:s', $articleData['meta']['date']),
+            'create' => \date_create_from_format('Y-m-d H:i:s', $articleData['meta']['date'])->getTimestamp(),
             'tags' => $articleData['meta']['tags'],
             'status' => 2,
         ]);
-        $io->text('posted article id: <info>'.$return.'</>');
+        $io->text('uploaded article id: <info>'.$return.'</>');
     }
 }
