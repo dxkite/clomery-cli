@@ -27,6 +27,7 @@ class PostArticleCommand extends Command
         ->addOption('url', 'u', InputOption::VALUE_OPTIONAL, 'the server post api url')
         ->addOption('token', 't', InputOption::VALUE_OPTIONAL, 'the server post api token')
         ->addOption('force', 'f', InputOption::VALUE_NONE, 'force update post data')
+        ->addOption('debug', 'd', InputOption::VALUE_NONE, 'enable debug proxy')
         ->addOption('database', 'db', InputOption::VALUE_OPTIONAL, 'the path to save scan database', './clomery-data');
     }
 
@@ -43,8 +44,18 @@ class PostArticleCommand extends Command
 
         $url = $input->getOption('url');
         $token = $input->getOption('token');
+        $debug = $input->getOption('debug');
+
+
         $config = new Config;
-        $config->setCookiePath(  $outputPath.'/session');
+        $config->setCookiePath($outputPath.'/session');
+
+        if ($debug) {
+            $config->setEnableProxy(true);
+            $config->setProxyHost('127.0.0.1');
+            $config->setProxyPort(8888);
+        }
+      
         $remoteClass = new RemoteClass($url, $config, [
             'Clomery-Token' => $token,
         ]);
