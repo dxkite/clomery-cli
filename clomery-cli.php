@@ -2,6 +2,7 @@
 
 use clomery\command\PostAllCommand;
 use clomery\command\PostScanCommand;
+use clomery\command\PostDeleteCommand;
 use clomery\command\PostArticleCommand;
 use clomery\command\PostAnalysisCommand;
 use clomery\command\PostGenerateCommand;
@@ -15,6 +16,7 @@ $app->add(new PostScanCommand);
 $app->add(new PostGenerateCommand);
 $app->add(new PostAnalysisCommand);
 $app->add(new PostArticleCommand);
+$app->add(new PostDeleteCommand);
 $app->add(new PostAllCommand);
 
 $app->run();
