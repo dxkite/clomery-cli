@@ -1,5 +1,5 @@
 <?php
-namespace clomery\remote;
+namespace dxkite\support\remote;
 
 class RemoteException extends \Exception
 {

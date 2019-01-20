@@ -3,8 +3,9 @@ namespace clomery\command;
 
 use CURLFile;
 use clomery\markdown\LinkParse;
-use clomery\remote\RemoteClass;
+use dxkite\support\remote\Config;
 use suda\core\storage\FileStorage;
+use dxkite\support\remote\RemoteClass;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputOption;
@@ -42,7 +43,9 @@ class PostArticleCommand extends Command
 
         $url = $input->getOption('url');
         $token = $input->getOption('token');
-        $remoteClass = new RemoteClass($url, $outputPath.'/session', [
+        $config = new Config;
+        $config->setCookiePath(  $outputPath.'/session');
+        $remoteClass = new RemoteClass($url, $config, [
             'Clomery-Token' => $token,
         ]);
 
