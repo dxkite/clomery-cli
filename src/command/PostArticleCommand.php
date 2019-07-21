@@ -65,7 +65,7 @@ class PostArticleCommand extends Command
         }
       
         $remoteClass = new RemoteClass($url, $config, [
-            'Clomery-Token' => $token,
+            'x-clomery-token' => $token,
         ]);
 
         $io->text('upload to <info>'.$url.'</>');
