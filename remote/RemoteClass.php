@@ -50,7 +50,7 @@ class RemoteClass
      */
     protected $response;
     /**
-     * 响应内容类型 
+     * 响应内容类型
      *
      * @var string
      */
@@ -107,11 +107,11 @@ class RemoteClass
      */
     public function exec(string $url, string $method, array $params, array $headerArray)
     {
-        $this->id++; 
+        $this->id++;
 
         $headers =[
-            'XRPC-Id:'. $this->id,
-            'XRPC-Method:'.$method,
+            'x-method-id:'. $this->id,
+            'x-method:'.$method,
             'User-Agent: XRPC-Client',
             'Accept: application/json , image/*'
         ];
@@ -182,6 +182,12 @@ class RemoteClass
                 } else {
                     return $this->response;
                 }
+            } elseif ($this->responseCode == 400) {
+                if (preg_match('/json/i', $this->responseContentType)) {
+                    $error=json_decode($this->response, true);
+                    throw (new RemoteException($error['error']['message'], $error['error']['code']))->setName($error['error']['name']);
+                }
+                throw new RemoteException($this->response);
             } elseif ($this->responseCode == 500) {
                 if (preg_match('/json/i', $this->responseContentType)) {
                     $error=json_decode($this->response, true);
@@ -203,7 +209,7 @@ class RemoteClass
      * Get 响应码
      *
      * @return  int
-     */ 
+     */
     public function getResponseCode()
     {
         return $this->responseCode;
@@ -213,7 +219,7 @@ class RemoteClass
      * Get 响应内容类型
      *
      * @return  string
-     */ 
+     */
     public function getResponseContentType()
     {
         return $this->responseContentType;
@@ -223,7 +229,7 @@ class RemoteClass
      * Get 响应文本
      *
      * @return  string
-     */ 
+     */
     public function getResponse()
     {
         return $this->response;

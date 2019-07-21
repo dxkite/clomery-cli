@@ -36,7 +36,6 @@ class LinkParse extends Parsedown
                 $this->name[$link] = $link['element']['attributes']['alt'] ?? null;
             }
         }
-      
         return $image;
     }
 

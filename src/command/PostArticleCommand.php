@@ -91,22 +91,24 @@ class PostArticleCommand extends Command
         $content = $articleData['content'];
         
         if (isset($articleData['meta']['categories'])) {
-            $category = $articleData['meta']['categories'][count($articleData['meta']['categories'])-1] ?? '';
+            $category = $articleData['meta']['categories'];
         } else {
             $category = null;
         }
         
         
-        $articleId = $remoteClass->_call('save', [
+        $articleUpoloadData = $remoteClass->_call('save', [
             'title' => $articleData['meta']['title'] ?? 'untitiled',
             'slug' => $name,
             'description' => $articleData['description'] ?? '',
             'content' => $content,
             'category' => $category ,
             'create' => \date_create_from_format('Y-m-d H:i:s', $articleData['meta']['date'])->getTimestamp(),
-            'tags' => $articleData['meta']['tags'] ?? null,
-            'status' => 2,
+            'tag' => $articleData['meta']['tags'] ?? null,
+            'status' => 0,
         ]);
+
+        $articleId = $articleUpoloadData['id'];
 
         $io->text('uploaded article id: <info>'.$articleId.'</>');
         $io->newLine(2);
@@ -127,13 +129,13 @@ class PostArticleCommand extends Command
             foreach ($articleImageData as $path) {
                 $filePath = $outputPath.'/posts/'.$name.'/resource/' .$path;
                 if (FileSystem::exist($filePath)) {
-                    $uploadedInfo = $remoteClass->_call('saveImage', [
+                    $uploadedInfo = $remoteClass->_call('saveFile', [
                         'article' => $articleId,
                         'name' => $names[$path] ?? $path,
-                        'image' => new CURLFile($filePath),
+                        'file' => new CURLFile($filePath),
                     ]);
-                    if (!empty($uploadedInfo)) {
-                        $replace[$path] = $uploadedInfo;
+                    if (!empty($uploadedInfo['result'])) {
+                        $replace[$path] = $uploadedInfo['result'];
                         $progressBar->advance();
                     }
                 }
@@ -149,13 +151,13 @@ class PostArticleCommand extends Command
             foreach ($articleAttachmentData as $path) {
                 $filePath = PathTrait::toAbsolutePath($outputPath.'/posts/'.$name.'/resource/' .$path);
                 if (FileSystem::exist($filePath)) {
-                    $uploadedInfo = $remoteClass->_call('saveAttachment', [
+                    $uploadedInfo = $remoteClass->_call('saveFile', [
                         'article' => $articleId,
                         'name' => $names[$path] ?? $path,
-                        'attachment' => new CURLFile($filePath),
+                        'file' => new CURLFile($filePath),
                     ]);
-                    if (!empty($uploadedInfo)) {
-                        $replace[$path] = $uploadedInfo;
+                    if (!empty($uploadedInfo['result'])) {
+                        $replace[$path] = $uploadedInfo['result'];
                     }
                 }
                 
@@ -166,7 +168,7 @@ class PostArticleCommand extends Command
         }
         
         foreach ($replace as $path => $uploadedInfo) {
-            $content = \str_replace(']('.$path.')', ']('.$uploadedInfo['url'].')', $content);
+            $content = \str_replace(']('.$path.')', ']('.$uploadedInfo.')', $content);
         }
 
         $articleId = $remoteClass->_call('save', [
@@ -177,7 +179,7 @@ class PostArticleCommand extends Command
             'category' => $category ,
             'create' => \date_create_from_format('Y-m-d H:i:s', $articleData['meta']['date'])->getTimestamp(),
             'tags' => $articleData['meta']['tags']?? null,
-            'status' => 2,
+            'status' => 1,
         ]);
         $io->text('uploaded article resource : <info>'.$hash.'</>');
         \file_put_contents($outputPath.'/posts/'.$name.'/version', $hash);

@@ -31,7 +31,6 @@ class PostAnalysisCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = new SymfonyStyle($input, $output);
-
         $name = $input->getArgument('name');
         $outputPath = $input->getOption('database');
         FileSystem::make($outputPath);
@@ -56,23 +55,21 @@ class PostAnalysisCommand extends Command
         $io->listing($linkParse->getImages());
         $io->section('article attachments');
         $io->listing($linkParse->getAttachments());
-        $s->path($outputPath.'/posts/'.$name);
-        
-
+        FileSystem::make($outputPath.'/posts/'.$name);
         $imageJson =  $outputPath.'/posts/'.$name.'/image.json';
         $attachmentJson =  $outputPath.'/posts/'.$name.'/attachment.json';
         $nameJson =  $outputPath.'/posts/'.$name.'/name.json';
 
-        $s->put($imageJson, \json_encode($linkParse->getImages(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        $s->put($attachmentJson, \json_encode($linkParse->getAttachments(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        $s->put($nameJson, \json_encode($linkParse->getName(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        FileSystem::put($imageJson, \json_encode($linkParse->getImages(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        FileSystem::put($attachmentJson, \json_encode($linkParse->getAttachments(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        FileSystem::put($nameJson, \json_encode($linkParse->getName(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         
         foreach ($linkParse->getImages() as $imagePath) {
-            $s->copy($rootPath.'/'.$imagePath, $outputPath.'/posts/'.$name.'/resource/' .$imagePath);
+            FileSystem::copy($rootPath.'/'.$imagePath, $outputPath.'/posts/'.$name.'/resource/' .$imagePath);
         }
 
         foreach ($linkParse->getAttachments() as $attachment) {
-            $s->copy($rootPath.'/'.$attachment, $outputPath.'/posts/'.$name.'/resource/' .$attachment);
+            FileSystem::copy($rootPath.'/'.$attachment, $outputPath.'/posts/'.$name.'/resource/' .$attachment);
         }
         return true;
     }
