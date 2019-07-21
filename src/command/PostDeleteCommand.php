@@ -6,6 +6,7 @@ use clomery\markdown\LinkParse;
 use dxkite\support\remote\Config;
 use suda\core\storage\FileStorage;
 use dxkite\support\remote\RemoteClass;
+use suda\framework\filesystem\FileSystem;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputOption;
@@ -30,10 +31,16 @@ class PostDeleteCommand extends Command
         ->addOption('database', 'db', InputOption::VALUE_OPTIONAL, 'the path to save scan database', './clomery-data');
     }
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int|void|null
+     * @throws \dxkite\support\remote\RemoteException
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = new SymfonyStyle($input, $output);
-        $s = new FileStorage;
+
 
         $articleId = $input->getArgument('id');
       
@@ -42,8 +49,8 @@ class PostDeleteCommand extends Command
         $token = $input->getOption('token');
         $debug = $input->getOption('debug');
         $outputPath = $input->getOption('database');
+        FileSystem::make($outputPath);
 
-        $outputPath = $s->path($outputPath);
         $config = new Config;
         $config->setCookiePath($outputPath.'/session');
 

@@ -2,10 +2,10 @@
 namespace clomery\command;
 
 use CURLFile;
-use clomery\markdown\LinkParse;
 use dxkite\support\remote\Config;
-use suda\core\storage\FileStorage;
 use dxkite\support\remote\RemoteClass;
+use suda\framework\filesystem\FileSystem;
+use suda\framework\loader\PathTrait;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputOption;
@@ -31,17 +31,25 @@ class PostArticleCommand extends Command
         ->addOption('database', 'db', InputOption::VALUE_OPTIONAL, 'the path to save scan database', './clomery-data');
     }
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int|null
+     * @throws \Exception
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = new SymfonyStyle($input, $output);
-        $s = new FileStorage;
+
         $path = $input->getArgument('path');
-        $path = $s->abspath($path);
+        $path = PathTrait::toAbsolutePath($path);
+
         $name = \pathinfo($path, PATHINFO_FILENAME);
         $outputPath = $input->getOption('database');
-        $outputPath = $s->path($outputPath);
-        $force = $input->getOption('force');
+        $outputPath = PathTrait::toAbsolutePath($outputPath);
+        FileSystem::make($outputPath);
 
+        $force = $input->getOption('force');
         $url = $input->getOption('url');
         $token = $input->getOption('token');
         $debug = $input->getOption('debug');
@@ -79,7 +87,7 @@ class PostArticleCommand extends Command
         
         // 读取文件信息
         $articlePath = $outputPath.'/posts/'.$name.'.json';
-        $articleData = \json_decode($s->get($articlePath), true);
+        $articleData = \json_decode(FileSystem::get($articlePath), true);
         $content = $articleData['content'];
         
         if (isset($articleData['meta']['categories'])) {
@@ -92,7 +100,7 @@ class PostArticleCommand extends Command
         $articleId = $remoteClass->_call('save', [
             'title' => $articleData['meta']['title'] ?? 'untitiled',
             'slug' => $name,
-            'excerpt' => $articleData['excerpt'] ?? '',
+            'description' => $articleData['description'] ?? '',
             'content' => $content,
             'category' => $category ,
             'create' => \date_create_from_format('Y-m-d H:i:s', $articleData['meta']['date'])->getTimestamp(),
@@ -108,17 +116,17 @@ class PostArticleCommand extends Command
         $attachmentJson =  $outputPath.'/posts/'.$name.'/attachment.json';
         $nameJson =  $outputPath.'/posts/'.$name.'/name.json';
         $names = [];
-        if ($s->exist($nameJson)) {
-            $names = \json_decode($s->get($nameJson), true);
+        if (FileSystem::exist($nameJson)) {
+            $names = \json_decode(FileSystem::get($nameJson), true);
         }
 
-        if ($s->exist($imageJson)) {
+        if (FileSystem::exist($imageJson)) {
             $io->text('upload images');
-            $articleImageData = \json_decode($s->get($imageJson), true);
+            $articleImageData = \json_decode(FileSystem::get($imageJson), true);
             $progressBar = new ProgressBar($output, count($articleImageData));
             foreach ($articleImageData as $path) {
                 $filePath = $outputPath.'/posts/'.$name.'/resource/' .$path;
-                if ($s->exist($filePath)) {
+                if (FileSystem::exist($filePath)) {
                     $uploadedInfo = $remoteClass->_call('saveImage', [
                         'article' => $articleId,
                         'name' => $names[$path] ?? $path,
@@ -134,13 +142,13 @@ class PostArticleCommand extends Command
             $io->newLine(2);
         }
         
-        if ($s->exist($attachmentJson)) {
+        if (FileSystem::exist($attachmentJson)) {
             $io->text('upload attachment');
-            $articleAttachmentData = \json_decode($s->get($attachmentJson), true);
+            $articleAttachmentData = \json_decode(FileSystem::get($attachmentJson), true);
             $progressBar = new ProgressBar($output, count($articleAttachmentData));
             foreach ($articleAttachmentData as $path) {
-                $filePath = $s->abspath($outputPath.'/posts/'.$name.'/resource/' .$path);
-                if ($s->exist($filePath)) {
+                $filePath = PathTrait::toAbsolutePath($outputPath.'/posts/'.$name.'/resource/' .$path);
+                if (FileSystem::exist($filePath)) {
                     $uploadedInfo = $remoteClass->_call('saveAttachment', [
                         'article' => $articleId,
                         'name' => $names[$path] ?? $path,
@@ -156,6 +164,7 @@ class PostArticleCommand extends Command
             $progressBar->finish();
             $io->newLine(2);
         }
+        
         foreach ($replace as $path => $uploadedInfo) {
             $content = \str_replace(']('.$path.')', ']('.$uploadedInfo['url'].')', $content);
         }
@@ -163,7 +172,7 @@ class PostArticleCommand extends Command
         $articleId = $remoteClass->_call('save', [
             'title' => $articleData['meta']['title'] ?? 'untitiled',
             'slug' => $name,
-            'excerpt' => $articleData['excerpt'] ?? '',
+            'description' => $articleData['description'] ?? '',
             'content' => $content,
             'category' => $category ,
             'create' => \date_create_from_format('Y-m-d H:i:s', $articleData['meta']['date'])->getTimestamp(),
@@ -172,6 +181,7 @@ class PostArticleCommand extends Command
         ]);
         $io->text('uploaded article resource : <info>'.$hash.'</>');
         \file_put_contents($outputPath.'/posts/'.$name.'/version', $hash);
+        return true;
     }
 
     protected function checkMd5(string $path, string $md5)

@@ -2,7 +2,8 @@
 namespace clomery\command;
 
 use clomery\markdown\LinkParse;
-use suda\core\storage\FileStorage;
+use suda\framework\filesystem\FileSystem;
+use suda\framework\loader\PathTrait;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -22,15 +23,21 @@ class PostAnalysisCommand extends Command
         ->addOption('database', 'db', InputOption::VALUE_OPTIONAL, 'the path to save scan database', './clomery-data');
     }
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return bool|int|null
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = new SymfonyStyle($input, $output);
-        $s = new FileStorage;
+
         $name = $input->getArgument('name');
         $outputPath = $input->getOption('database');
-        $outputPath = $s->path($outputPath);
-        $data = $s->get($outputPath.'/posts.json');
-        $dataPost = $s->get($outputPath.'/posts/'.$name.'.json');
+        FileSystem::make($outputPath);
+        $outputPath = PathTrait::toAbsolutePath($outputPath);
+        $data = FileSystem::get($outputPath.'/posts.json');
+        $dataPost = FileSystem::get($outputPath.'/posts/'.$name.'.json');
         if (strlen($data) <= 0 || strlen($dataPost) <= 0) {
             return false;
         }
@@ -67,5 +74,6 @@ class PostAnalysisCommand extends Command
         foreach ($linkParse->getAttachments() as $attachment) {
             $s->copy($rootPath.'/'.$attachment, $outputPath.'/posts/'.$name.'/resource/' .$attachment);
         }
+        return true;
     }
 }

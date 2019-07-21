@@ -69,13 +69,14 @@ class RemoteClass
         $this->headers = $headers;
         $this->config = $config;
     }
-    
+
     /**
      * 通常调用 方式
      *
      * @param string $method
      * @param array $params
-     * @return void
+     * @return mixed
+     * @throws \dxkite\support\remote\RemoteException
      */
     public function __call(string $method, array $params)
     {
@@ -87,7 +88,8 @@ class RemoteClass
      *
      * @param string $method
      * @param array $params
-     * @return void
+     * @return mixed
+     * @throws \dxkite\support\remote\RemoteException
      */
     public function _call(string $method, array $params)
     {
@@ -100,7 +102,8 @@ class RemoteClass
      * @param string $url
      * @param string $method
      * @param array $params
-     * @return void
+     * @return mixed
+     * @throws \dxkite\support\remote\RemoteException
      */
     public function exec(string $url, string $method, array $params, array $headerArray)
     {

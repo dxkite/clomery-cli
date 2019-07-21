@@ -2,7 +2,8 @@
 namespace clomery\command;
 
 use Spyc;
-use suda\core\storage\FileStorage;
+use suda\framework\filesystem\FileSystem;
+use suda\framework\loader\PathTrait;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -25,15 +26,23 @@ class PostGenerateCommand extends Command
         ;
     }
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int|void|null
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $storage = new FileStorage;
+
         $io = new SymfonyStyle($input, $output);
         $inputPath = $input->getArgument('path');
         $outputPath = $input->getOption('database');
         $force = $input->getOption('force');
-        $inputPath = $storage->abspath($inputPath);
-        $outputPath = $storage->path($outputPath);
+
+        $inputPath = PathTrait::toAbsolutePath($inputPath);
+        $outputPath = PathTrait::toAbsolutePath($outputPath);
+        FileSystem::make($outputPath);
+
         $database = [];
         $io->title('Markdown Post Data Generater');
         $io->text('read meta data from markdown <info>'.$inputPath.'</>');
@@ -41,9 +50,8 @@ class PostGenerateCommand extends Command
         $sortPath = pathinfo($inputPath, PATHINFO_BASENAME);
         $name = pathinfo($inputPath, PATHINFO_FILENAME);
         $hash = \md5_file($inputPath);
-        $notUpdate=false;
-        if ($storage->exist($databasePath)) {
-            $database = \json_decode($storage->get($databasePath), true);
+        if (FileSystem::exist($databasePath)) {
+            $database = \json_decode(FileSystem::get($databasePath), true);
             if (array_key_exists($sortPath, $database)) {
                 if ($database[$sortPath][1] === $hash) {
                     $notUpdate=true;
@@ -55,7 +63,7 @@ class PostGenerateCommand extends Command
                 $database [$sortPath ]= [
                     $name, $hash, $sortPath, $inputPath
                 ];
-                $storage->put($databasePath, \json_encode($database, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+                FileSystem::put($databasePath, \json_encode($database, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
                 $io->text('save to database <info>'.$databasePath.'</>');
             }
         } else {
@@ -64,19 +72,19 @@ class PostGenerateCommand extends Command
                     $name, $hash, $sortPath, $inputPath
                 ]
             ];
-            $storage->put($databasePath, \json_encode($database, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            FileSystem::put($databasePath, \json_encode($database, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
             $io->text('save to database <info>'.$databasePath.'</>');
         }
-        $outPostPath= $storage->path($outputPath.'/posts/');
+        $outPostPath = PathTrait::toAbsolutePath($outputPath.'/posts/');
+        FileSystem::make($outputPath);
         $articlePath = $outPostPath .'/' .$name.'.json';
-        if ($storage->exist($articlePath)) {
+        if (FileSystem::exist($articlePath)) {
             if ($force) {
                 $notUpdate = false;
-                $articleData = \json_decode($storage->get($articlePath), true);
-                $data = $this->readArticle($inputPath, $io, $storage);
+                $data = $this->readArticle($inputPath, $io);
                 if ($data !== null) {
                     $data['meta']['modify'] = date('Y-m-d H:i:s');
-                    $storage->put($articlePath, \json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+                    FileSystem::put($articlePath, \json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
                     $io->text('article data saved: <info>'.$articlePath.'</>');
                 }
             } else {
@@ -84,9 +92,9 @@ class PostGenerateCommand extends Command
             }
         } else {
             $notUpdate = false;
-            $data = $this->readArticle($inputPath, $io, $storage);
+            $data = $this->readArticle($inputPath, $io);
             if ($data !== null) {
-                $storage->put($articlePath, \json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+                FileSystem::put($articlePath, \json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
                 $io->text('article data saved: <info>'.$articlePath.'</>');
             }
         }
@@ -95,9 +103,9 @@ class PostGenerateCommand extends Command
         }
     }
 
-    protected function readArticle(string $inputPath, SymfonyStyle $io, FileStorage $storage)
+    protected function readArticle(string $inputPath, SymfonyStyle $io)
     {
-        $article = $storage->get($inputPath);
+        $article = FileSystem::get($inputPath);
         if (strpos($article, '---', 1) > 0) {
             list($date, $meta, $article)  = \explode('---', $article, 3);
             $article = \preg_split('/\<\!\-\-\s*more\s*\-\-\>/', $article, 2);
@@ -113,13 +121,13 @@ class PostGenerateCommand extends Command
             $meta['create'] = $meta['date'];
             $data = [
                 'meta' => $meta,
-                'excerpt' => $excerpt,
+                'description' => $excerpt,
                 'content' => $content,
             ];
             $io->section('article data');
             $io->listing([
                 'title: '. $meta['title'],
-                'excerpt: ' .substr($excerpt, 0, 100),
+                'description: ' .substr($excerpt, 0, 100),
             ]);
             return $data;
         } else {

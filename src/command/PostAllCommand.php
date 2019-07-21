@@ -2,6 +2,8 @@
 namespace clomery\command;
 
 use suda\core\storage\FileStorage;
+use suda\framework\filesystem\FileSystem;
+use suda\framework\loader\PathTrait;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputOption;
@@ -27,20 +29,23 @@ class PostAllCommand extends Command
         ->addOption('force', 'f', InputOption::VALUE_NONE, 'force update post data');
     }
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int|void|null
+     * @throws \Exception
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $storage = new FileStorage;
-        $io = new SymfonyStyle($input, $output);
         $scanPath = $input->getArgument('path');
         $outputPath = $input->getOption('database');
         $force = $input->getOption('force');
         $url = $input->getOption('url');
         $token = $input->getOption('token');
-
-        $scanPath = $storage->abspath($scanPath);
-        $outputPath = $storage->path($outputPath);
-        foreach ($storage->readDirFiles($scanPath, false, '/\.md$/', false) as $sortPath) {
-            $path = $storage->abspath($scanPath .'/'.$sortPath);
+        $scanPath = PathTrait::toAbsolutePath($scanPath);
+        FileSystem::make($outputPath);
+        foreach (FileSystem::readFiles($scanPath, false, '/\.md$/', false) as $sortPath) {
+            $path = PathTrait::toAbsolutePath($scanPath .'/'.$sortPath);
             $this->getApplication()
             ->find('post:article')
             ->run(new ArrayInput([ 
