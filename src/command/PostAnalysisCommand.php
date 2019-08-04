@@ -1,4 +1,5 @@
 <?php
+
 namespace clomery\command;
 
 use clomery\markdown\LinkParse;
@@ -18,9 +19,9 @@ class PostAnalysisCommand extends Command
     protected function configure()
     {
         $this
-        ->setDescription('analysis the markdown archive, image and reference posts')
-        ->addArgument('name', InputArgument::REQUIRED, 'article name')
-        ->addOption('database', 'db', InputOption::VALUE_OPTIONAL, 'the path to save scan database', './clomery-data');
+            ->setDescription('analysis the markdown archive, image and reference posts')
+            ->addArgument('name', InputArgument::REQUIRED, 'article name')
+            ->addOption('database', 'db', InputOption::VALUE_OPTIONAL, 'the path to save scan database', './clomery-data');
     }
 
     /**
@@ -35,41 +36,46 @@ class PostAnalysisCommand extends Command
         $outputPath = $input->getOption('database');
         FileSystem::make($outputPath);
         $outputPath = PathTrait::toAbsolutePath($outputPath);
-        $data = FileSystem::get($outputPath.'/posts.json');
-        $dataPost = FileSystem::get($outputPath.'/posts/'.$name.'.json');
+        $data = FileSystem::get($outputPath . '/posts.json');
+        $dataPost = FileSystem::get($outputPath . '/posts/' . $name . '.json');
         if (strlen($data) <= 0 || strlen($dataPost) <= 0) {
             return false;
         }
         $data = json_decode($data, true);
         $dataPost = json_decode($dataPost, true);
-        if (!array_key_exists($name.'.md', $data)) {
+        if (!array_key_exists($name . '.md', $data)) {
             return false;
         }
-        $rootPath =  dirname($data[$name.'.md'][3]);
-        
+        $rootPath = dirname($data[$name . '.md'][3]);
+
         $linkParse = new LinkParse;
 
-        $linkParse ->text($dataPost['content']);
-        
+        $linkParse->text($dataPost['content']);
+
         $io->section('article images');
         $io->listing($linkParse->getImages());
         $io->section('article attachments');
         $io->listing($linkParse->getAttachments());
-        FileSystem::make($outputPath.'/posts/'.$name);
-        $imageJson =  $outputPath.'/posts/'.$name.'/image.json';
-        $attachmentJson =  $outputPath.'/posts/'.$name.'/attachment.json';
-        $nameJson =  $outputPath.'/posts/'.$name.'/name.json';
+        FileSystem::make($outputPath . '/posts/' . $name);
+
+        $imageJson = $outputPath . '/posts/' . $name . '/image.json';
+        $attachmentJson = $outputPath . '/posts/' . $name . '/attachment.json';
+        $nameJson = $outputPath . '/posts/' . $name . '/name.json';
 
         FileSystem::put($imageJson, \json_encode($linkParse->getImages(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         FileSystem::put($attachmentJson, \json_encode($linkParse->getAttachments(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         FileSystem::put($nameJson, \json_encode($linkParse->getName(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        
+
         foreach ($linkParse->getImages() as $imagePath) {
-            FileSystem::copy($rootPath.'/'.$imagePath, $outputPath.'/posts/'.$name.'/resource/' .$imagePath);
+            $dest = $outputPath . '/posts/' . $name . '/resource/' . $imagePath;
+            FileSystem::make(dirname($dest));
+            FileSystem::copy($rootPath . '/' . $imagePath, $dest);
         }
 
         foreach ($linkParse->getAttachments() as $attachment) {
-            FileSystem::copy($rootPath.'/'.$attachment, $outputPath.'/posts/'.$name.'/resource/' .$attachment);
+            $dest = $outputPath . '/posts/' . $name . '/resource/' . $attachment;
+            FileSystem::make(dirname($dest));
+            FileSystem::copy($rootPath . '/' . $attachment, $dest);
         }
         return true;
     }
