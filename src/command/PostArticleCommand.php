@@ -95,9 +95,9 @@ class PostArticleCommand extends Command
         } else {
             $category = null;
         }
-        
-        
-        $articleUpoloadData = $remoteClass->_call('save', [
+
+
+        $data = $remoteClass->_call('save', [
             'title' => $articleData['meta']['title'] ?? 'untitiled',
             'slug' => $name,
             'description' => $articleData['description'] ?? '',
@@ -108,9 +108,10 @@ class PostArticleCommand extends Command
             'status' => 0,
         ]);
 
-        $articleId = $articleUpoloadData['id'];
+        $articleUploadData = $data['result'];
+        $lastArticle = $articleUploadData['id'];
 
-        $io->text('uploaded article id: <info>'.$articleId.'</>');
+        $io->text('uploaded article id: <info>'.$lastArticle.'</>');
         $io->newLine(2);
 
         $replace = [];
@@ -130,7 +131,7 @@ class PostArticleCommand extends Command
                 $filePath = $outputPath.'/posts/'.$name.'/resource/' .$path;
                 if (FileSystem::exist($filePath)) {
                     $uploadedInfo = $remoteClass->_call('saveFile', [
-                        'article' => $articleId,
+                        'article' => $lastArticle,
                         'name' => $names[$path] ?? $path,
                         'file' => new CURLFile($filePath),
                     ]);
@@ -152,7 +153,7 @@ class PostArticleCommand extends Command
                 $filePath = PathTrait::toAbsolutePath($outputPath.'/posts/'.$name.'/resource/' .$path);
                 if (FileSystem::exist($filePath)) {
                     $uploadedInfo = $remoteClass->_call('saveFile', [
-                        'article' => $articleId,
+                        'article' => $lastArticle,
                         'name' => $names[$path] ?? $path,
                         'file' => new CURLFile($filePath),
                     ]);
@@ -171,7 +172,7 @@ class PostArticleCommand extends Command
             $content = \str_replace(']('.$path.')', ']('.$uploadedInfo.')', $content);
         }
 
-        $articleId = $remoteClass->_call('save', [
+        $lastArticle = $remoteClass->_call('save', [
             'title' => $articleData['meta']['title'] ?? 'untitiled',
             'slug' => $name,
             'description' => $articleData['description'] ?? '',
