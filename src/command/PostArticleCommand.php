@@ -57,6 +57,9 @@ class PostArticleCommand extends Command
 
         $config = new Config;
         $config->setCookiePath($outputPath.'/session');
+        $config->setEnableSSLVerify(true);
+        $config->setSSLVerifyPeer(false);
+        $config->setSSLVerifyHost(false);
 
         if ($debug) {
             $config->setEnableProxy(true);

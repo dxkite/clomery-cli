@@ -1,11 +1,6 @@
 <?php
 namespace dxkite\support\remote;
 
-use CURLFile;
-use Exception;
-use dxkite\support\remote\Config;
-use dxkite\support\remote\RemoteException;
-
 /**
  * 远程服务器接口类
  */
@@ -60,7 +55,7 @@ class RemoteClass
      * 创建远程服务对象接口
      *
      * @param string $url
-     * @param string $cookiePath
+     * @param Config $config
      * @param array $headers
      */
     public function __construct(string $url, Config $config, array $headers=[])
@@ -76,7 +71,7 @@ class RemoteClass
      * @param string $method
      * @param array $params
      * @return mixed
-     * @throws \dxkite\support\remote\RemoteException
+     * @throws RemoteException
      */
     public function __call(string $method, array $params)
     {
@@ -89,7 +84,7 @@ class RemoteClass
      * @param string $method
      * @param array $params
      * @return mixed
-     * @throws \dxkite\support\remote\RemoteException
+     * @throws RemoteException
      */
     public function _call(string $method, array $params)
     {
@@ -102,8 +97,9 @@ class RemoteClass
      * @param string $url
      * @param string $method
      * @param array $params
+     * @param array $headerArray
      * @return mixed
-     * @throws \dxkite\support\remote\RemoteException
+     * @throws RemoteException
      */
     public function exec(string $url, string $method, array $params, array $headerArray)
     {
@@ -140,8 +136,8 @@ class RemoteClass
         }
 
         if ($this->config->getEnableSSLVerify()) {
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, $this->config->getSSLVerifyHost());
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $this->config->getSSLVerifyPeer());
+            curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, $this->config->getSSLVerifyHost());
+            curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, $this->config->getSSLVerifyPeer());
         }
         
         foreach ($params as $name => $param) {
