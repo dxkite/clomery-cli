@@ -52,10 +52,19 @@ class PostAnalysisCommand extends Command
 
         $linkParse->text($dataPost['content']);
 
-        $io->section('article images');
-        $io->listing($linkParse->getImages());
-        $io->section('article attachments');
-        $io->listing($linkParse->getAttachments());
+        $images = $linkParse->getImages();
+        if (count($images) > 0) {
+            $io->section('article images');
+            $io->listing($images);
+        }
+
+        $attachments = $linkParse->getAttachments();
+        if (count($attachments) > 0) {
+            $io->section('article attachments');
+            $io->listing($attachments);
+        }
+
+   
         FileSystem::make($outputPath . '/posts/' . $name);
 
         $imageJson = $outputPath . '/posts/' . $name . '/image.json';
