@@ -26,11 +26,13 @@ class PostArticleCommand extends Command
         $this
             ->setDescription('post the markdown archive')
             ->addArgument('path', InputArgument::REQUIRED, 'article path')
+            ->addOption('status', null, InputOption::VALUE_OPTIONAL, 'upload status', 0)
             ->addOption('url', 'u', InputOption::VALUE_OPTIONAL, 'the server post api url')
             ->addOption('token', 't', InputOption::VALUE_OPTIONAL, 'the server post api token')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'force update post data')
+            ->addOption('force-category', 'c', InputOption::VALUE_NONE, 'force update category data')
             ->addOption('debug', 'd', InputOption::VALUE_NONE, 'enable debug proxy')
-            ->addOption('database', 'db', InputOption::VALUE_OPTIONAL, 'the path to save scan database', './clomery-data');
+            ->addOption('database', null, InputOption::VALUE_OPTIONAL, 'the path to save scan database', './clomery-data');
     }
 
     /**
@@ -52,10 +54,12 @@ class PostArticleCommand extends Command
         FileSystem::make($outputPath);
 
         $force = $input->getOption('force');
+        $fuc = $input->getOption('force-category');
         $url = $input->getOption('url');
         $token = $input->getOption('token');
         $debug = $input->getOption('debug');
 
+        $status = $input->getOption('status');
 
         $config = new Config;
         $config->setCookiePath($outputPath . '/session');
@@ -103,19 +107,19 @@ class PostArticleCommand extends Command
         }
 
 
-            $data = $remoteClass->_call('save', [
-                'title' => $articleData['meta']['title'] ?? 'untitiled',
-                'slug' => $name,
-                'description' => $articleData['description'] ?? '',
-                'content' => $content,
-                'category' => $category,
-                'create' => \date_create_from_format('Y-m-d H:i:s', $articleData['meta']['date'])->getTimestamp(),
-                'tag' => $articleData['meta']['tags'] ?? null,
-                'attribute' => [
-                    'rewrite_category_count' => true,
-                ],
-                'status' => 0,
-            ]);
+        $data = $remoteClass->_call('save', [
+            'title' => $articleData['meta']['title'] ?? 'untitiled',
+            'slug' => $name,
+            'description' => $articleData['description'] ?? '',
+            'content' => $content,
+            'category' => $category,
+            'create' => \date_create_from_format('Y-m-d H:i:s', $articleData['meta']['date'])->getTimestamp(),
+            'tag' => $articleData['meta']['tags'] ?? null,
+            'attribute' => [
+                'rewrite_category_count' => $fuc,
+            ],
+            'status' => $status,
+        ]);
 
         $articleUploadData = $data['result'];
         $lastArticle = $articleUploadData['id'];
@@ -186,16 +190,16 @@ class PostArticleCommand extends Command
         }
 
 
-            $remoteClass->_call('save', [
-                'title' => $articleData['meta']['title'] ?? 'untitiled',
-                'slug' => $name,
-                'description' => $articleData['description'] ?? '',
-                'content' => $content,
-                'category' => $category,
-                'create' => \date_create_from_format('Y-m-d H:i:s', $articleData['meta']['date'])->getTimestamp(),
-                'tags' => $articleData['meta']['tags'] ?? null,
-                'status' => 1,
-            ]);
+        $remoteClass->_call('save', [
+            'title' => $articleData['meta']['title'] ?? 'untitiled',
+            'slug' => $name,
+            'description' => $articleData['description'] ?? '',
+            'content' => $content,
+            'category' => $category,
+            'create' => \date_create_from_format('Y-m-d H:i:s', $articleData['meta']['date'])->getTimestamp(),
+            'tags' => $articleData['meta']['tags'] ?? null,
+            'status' => 1,
+        ]);
 
 
         $io->text('uploaded article resource : <info>' . $hash . '</>');

@@ -27,8 +27,8 @@ class PostAllCommand extends Command
             ->addOption('url', 'u', InputOption::VALUE_OPTIONAL, 'the server post api url')
             ->addOption('token', 't', InputOption::VALUE_OPTIONAL, 'the server post api token')
             ->addArgument('path', InputArgument::REQUIRED, 'the path to scan')
-            ->addArgument('start', InputArgument::OPTIONAL, 'start', 0)
-            ->addOption('database', 'db', InputArgument::OPTIONAL, 'the path to save scan database', './clomery-data')
+            ->addOption('start', 's', InputArgument::OPTIONAL, 'start', 0)
+            ->addOption('database', 'b', InputArgument::OPTIONAL, 'the path to save scan database', './clomery-data')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'force update post data');
     }
 
@@ -46,7 +46,7 @@ class PostAllCommand extends Command
         $force = $input->getOption('force');
         $url = $input->getOption('url');
         $token = $input->getOption('token');
-        $start = $input->getArgument('start');
+        $start = $input->getOption('start');
 
         $scanPath = PathTrait::toAbsolutePath($scanPath);
         FileSystem::make($outputPath);
